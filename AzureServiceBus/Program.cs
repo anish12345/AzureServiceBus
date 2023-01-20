@@ -7,6 +7,8 @@ string connectionString = "Endpoint=sb://anishservicebus.servicebus.windows.net/
 
 string queueName = "anishqueue";
 
+string[] Importance = new string[] { "High", "Medium", "Low" };
+
 List<Order> orders = new List<Order>()
 {
         new Order(){OrderID="01",Quantity=786,UnitPrice=9.99F},
@@ -15,9 +17,11 @@ List<Order> orders = new List<Order>()
 
 };
 
-await SendMessage(orders);
+//await SendMessage(orders);
 // await PeekMessages();
 //await ReciveMessages();
+
+await GetProperties();
 
 
 async Task SendMessage(List<Order> orders)
@@ -26,11 +30,14 @@ async Task SendMessage(List<Order> orders)
     ServiceBusSender serviceBusSender = serviceBusClient.CreateSender(queueName);
 
     ServiceBusMessageBatch serviceBusMessageBatch = await serviceBusSender.CreateMessageBatchAsync();
+    int i = 0;
     foreach (Order order in orders)
     {
 
         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(JsonConvert.SerializeObject(order));
         serviceBusMessage.ContentType = "application/json";
+        serviceBusMessage.ApplicationProperties.Add("Importance", Importance[i]);
+        i++;
         if (!serviceBusMessageBatch.TryAddMessage(
             serviceBusMessage))
         {
@@ -40,6 +47,8 @@ async Task SendMessage(List<Order> orders)
     }
     Console.WriteLine("Sending messages");
     await serviceBusSender.SendMessagesAsync(serviceBusMessageBatch);
+    await serviceBusSender.DisposeAsync();
+    await serviceBusClient.DisposeAsync();
 }
 
 async Task PeekMessages()
@@ -75,5 +84,20 @@ async Task ReciveMessages()
         Console.WriteLine("Quantity {0}", order.Quantity);
         Console.WriteLine("Unit Price {0}", order.UnitPrice);
 
+    }
+}
+
+async Task GetProperties()
+{
+    ServiceBusClient serviceBusClient = new ServiceBusClient(connectionString);
+    ServiceBusReceiver serviceBusReceiver = serviceBusClient.CreateReceiver(queueName,
+        new ServiceBusReceiverOptions() { ReceiveMode = ServiceBusReceiveMode.PeekLock });
+
+    IAsyncEnumerable<ServiceBusReceivedMessage> messages = serviceBusReceiver.ReceiveMessagesAsync();
+    await foreach (ServiceBusReceivedMessage message in messages)
+    {
+        Console.WriteLine("Sequence number {0}", message.SequenceNumber);
+        Console.WriteLine("Message Id {0}", message.MessageId);
+        Console.WriteLine("Message Importance {0}", message.ApplicationProperties["Importance"]);
     }
 }
