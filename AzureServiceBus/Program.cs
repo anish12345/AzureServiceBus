@@ -15,9 +15,9 @@ List<Order> orders = new List<Order>()
 
 };
 
-//await SendMessage(orders);
+await SendMessage(orders);
 // await PeekMessages();
-await ReciveMessages();
+//await ReciveMessages();
 
 
 async Task SendMessage(List<Order> orders)
