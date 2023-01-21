@@ -1,6 +1,7 @@
 ﻿
 using Azure.Messaging.ServiceBus;
 using AzureServiceBus;
+using Microsoft.Azure.Amqp.Framing;
 using Newtonsoft.Json;
 
 string connectionString = "Endpoint=sb://anishservicebus.servicebus.windows.net/;SharedAccessKeyName=anishpolicy;SharedAccessKey=KvCEOy95D+Ia5lHWvObCGw1+OYvetwt2blx1D+d8DFI=;EntityPath=anishqueue";
@@ -17,11 +18,11 @@ List<Order> orders = new List<Order>()
 
 };
 
-//await SendMessage(orders);
+await SendMessage(orders);
 // await PeekMessages();
 //await ReciveMessages();
 
-await GetProperties();
+//await GetProperties();
 
 
 async Task SendMessage(List<Order> orders)
@@ -36,7 +37,9 @@ async Task SendMessage(List<Order> orders)
 
         ServiceBusMessage serviceBusMessage = new ServiceBusMessage(JsonConvert.SerializeObject(order));
         serviceBusMessage.ContentType = "application/json";
-        serviceBusMessage.ApplicationProperties.Add("Importance", Importance[i]);
+       // serviceBusMessage.MessageId = messageId.ToString(); used for duplicate message detection
+        //serviceBusMessage.TimeToLive = TimeSpan.FromSeconds(30);
+        //serviceBusMessage.ApplicationProperties.Add("Importance", Importance[i]);
         i++;
         if (!serviceBusMessageBatch.TryAddMessage(
             serviceBusMessage))
